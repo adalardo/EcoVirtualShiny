@@ -1,0 +1,507 @@
+#####################
+## Exponential Growth
+#####################
+popExpUI <- function(id) {
+  # O NS vem do pacote shiny
+    ns <- shiny::NS(id)
+    # Todas as funções de layout e widgets são do namespace shiny
+    shiny::tagList(
+               shiny::titlePanel("Crescimento Exponencial"),
+               shiny::sidebarLayout(
+                          shiny::sidebarPanel(
+                                     shiny::sliderInput(ns("n0"), "População inicial:", value = 10, min = 1, max = 100, step = 1),
+                                     shiny::sliderInput(ns("lamb"), "Taxa de crescimento (lambda):", min = 0.01, max = 2, value = 1.05, step = 0.01, animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                     shiny::sliderInput(ns("tmax"), "Trajetória temporal:", min = 1, max = 100, value = 5, step = 1),
+                                     shiny::sliderInput(ns("tstep"), "Intervalo de tempo:", min = 0.001, max = 1, value = 1, step = 0.001)
+                                  ),
+                          shiny::mainPanel(
+                                     shiny::plotOutput(ns("plot")),
+                                     shiny::tags$br(),
+                                     shiny::tags$hr(),
+                                     shiny::fluidRow(
+                                                shiny::column(width = 12,
+                                                              style = "display: flex; justify-content: center; align-items: center; gap: 10px;",
+                                                              shiny::actionButton(ns("lambDec"), " - lambda", class = "btn-danges btn-sm"),
+                                                              shiny::actionButton(
+                                                                                    ns("play_btn"), 
+                                                                                    "", 
+                                                                                    icon = shiny::icon("play"), 
+                                                                                    class = "btn-success btn-lg",
+                                                                                    style = "width: 80px; height: 50px;"
+                                                                                ),
+                                                              shiny::actionButton(ns("lambInc"), " + lambda", class = "btn-sucess btn-sm")
+                                                              )
+                                            )
+                                 )
+                      )
+           )
+}
+popExpServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+        anima <- shiny::reactiveVal(FALSE)
+        simRes <- shiny::reactive({
+             EcoVirtual::popExp(
+                             N0 =  as.numeric(input$n0),
+                             lamb = as.numeric(input$lamb),
+                             tmax = as.numeric(input$tmax),
+                             intt = as.numeric(input$tstep)
+                 )
+        })
+        shiny::observeEvent(input$lambDec, {
+            shiny::updateSliderInput(session, "lamb", value = input$lamb - 0.01)
+        })
+        shiny::observeEvent(input$lambInc, {
+            shiny::updateSliderInput(session, "lamb", value = input$lamb + 0.01)
+        })
+        shiny::observeEvent(input$play_btn, {
+            if (input$lamb >= 2 && !anima()) {
+                shiny::updateSliderInput(session, "lamb", value = 1.05)
+                anima(TRUE)
+                shiny::updateActionButton(session, "play_btn", 
+                                          label = "", 
+                                          icon = shiny::icon("pause"))
+                
+            }else{
+                anima(!anima())
+                # Muda o rótulo e ícone do botão dinamicamente
+                if (anima()) {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("pause"))
+                } else {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("play"))
+                }
+            }
+        })
+        shiny::observe({
+            if(anima()) {
+                shiny::invalidateLater(300, session)
+                lambPlus <- shiny::isolate(input$lamb + 0.01)
+                if (lambPlus <= 2) {
+                    shiny::updateSliderInput(session, "lamb", value = lambPlus)
+                } else {
+                    # Para a animação ao chegar no fim
+                    anima(FALSE)
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("sync"))
+                    #shiny::updateSliderInput(session, "tmax", value = 1.05)
+                }
+            }
+        })
+        output$plot <- shiny::renderPlot({
+            if (is.null(input$n0)){
+                return(NULL)
+            }
+            dataSim <- simRes()
+            EcoVirtual::popDynPlot(
+                            popData = dataSim
+                            #tmax   = as.numeric(input$tmax)
+                        )
+        })  
+    })
+}
+#####################
+## LOGISTIC Growth
+#####################
+popLogisticUI <- function(id) {
+  ns <- shiny::NS(id) 
+  shiny::tagList(
+             shiny::titlePanel("Crescimento Logístico"),
+             shiny::sidebarLayout(
+                        shiny::sidebarPanel(
+                                   shiny::sliderInput(ns("tmax"), "Tempo máximo:", min = 10, max = 1000, value = 50, step = 10),
+                                   shiny::sliderInput(ns("K"), "Capacidade de suporte:", min = 50, max = 10000, value = 50, step = 50),
+                                   shiny::sliderInput(ns("n0"), "População inicial:", value = 10, min = 1, max = 100, step = 1),
+                                    shiny::sliderInput(ns("r"), "Taxa de crescimento (r):", min = -3, max = 3, value = 0.05, step = 0.01, animate = shiny::animationOptions(interval = 300, loop = FALSE))
+                                   ## shiny::checkboxInput(
+                                   ##            inputId = ns("ext"), 
+                                   ##            label = "Extinção populacional", 
+                                   ##            value = FALSE 
+                                   ##        )
+                                   ),
+                        shiny::mainPanel(
+                                   shiny::plotOutput(ns("plot")),
+                                   shiny::tags$br(),
+                                   shiny::tags$hr(),
+                                   shiny::fluidRow(
+                                              shiny::column(width = 12,
+                                                            style = "display: flex; justify-content: center; align-items: center; gap: 10px;",
+                                                            shiny::actionButton(ns("rDec"), " - r", class = "btn-danges btn-sm"),
+                                                            shiny::actionButton(
+                                                                                    ns("play_btn"), 
+                                                                                    "", 
+                                                                                    icon = shiny::icon("play"), 
+                                                                                    class = "btn-success btn-lg",
+                                                                                    style = "width: 80px; height: 50px;"
+                                                                                ),
+                                                            shiny::actionButton(ns("rInc"), " + r", class = "btn-sucess btn-sm")
+                                                            )
+                                            )
+                               )
+                    )
+         )
+}
+popLogisticServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+        anima <- shiny::reactiveVal(FALSE)
+        simRes <- shiny::reactive({
+             EcoVirtual::popLog(
+                             N0 =  as.numeric(input$n0),
+                             tmax = as.numeric(input$tmax),
+                             r = as.numeric(input$r),
+                             K = as.numeric(input$K)
+                 )
+        })
+         shiny::observeEvent(input$rDec, {
+            shiny::updateSliderInput(session, "r", value = input$r - 0.01)
+        })
+         shiny::observeEvent(input$rInc, {
+            shiny::updateSliderInput(session, "r", value = input$r + 0.01)
+        })
+        shiny::observeEvent(input$play_btn, {
+            if (input$r >= 3 && !anima()) {
+                shiny::updateSliderInput(session, "r", value = 0.05)
+                anima(TRUE)
+                shiny::updateActionButton(session, "play_btn", 
+                                          label = "", 
+                                          icon = shiny::icon("pause"))
+                
+            }else{
+                anima(!anima())
+                # Muda o rótulo e ícone do botão dinamicamente
+                if (anima()) {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("pause"))
+                } else {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("play"))
+                }
+            }
+        })
+        shiny::observe({
+            if(anima()) {
+                shiny::invalidateLater(300, session)
+                rPlus <- shiny::isolate(input$r + 0.01)
+                if (rPlus <= 3){
+                    shiny::updateSliderInput(session, "r", value = rPlus)
+                }else{
+                    # Para a animação ao chegar no fim
+                    anima(FALSE)
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("sync"))
+                }
+            }
+        })
+        output$plot <- shiny::renderPlot({
+            if (is.null(input$n0)) return(NULL)
+            dataSim <- simRes()
+            EcoVirtual::popDynPlot(
+                            popData = dataSim
+                             )
+        })  
+    })
+}
+
+###########################
+## LOGISTIC BIFURCATION MAP
+###########################
+bifMapUI <- function(id) {
+  ns <- shiny::NS(id) 
+  shiny::tagList(
+             shiny::titlePanel("Diagrama de bifurcação"),
+             shiny::sidebarLayout(
+                        shiny::sidebarPanel(
+                                   shiny::sliderInput(ns("tmax"), "Tempo máximo na simulação para cada população:", min = 10, max = 500, value = 200, step = 10, animate = shiny::animationOptions(interval = 500, loop = TRUE)),
+                                   shiny::sliderInput(ns("K"), "Capacidade de suporte:", min = 50, max = 10000, value = 100, step = 50),
+                                   shiny::sliderInput(ns("n0"), "População inicial:", value = 50, min = 1, max = 100, step = 1),
+                                   shiny::sliderInput(ns("rdmin"), "Taxa de crescimento discreto (rd) mínimo:", min = 1, max = 2.5, value = 1, step = 0.1),
+                                   shiny::sliderInput(ns("rdmax"), "Taxa de crescimento discreto (rd) máximo:", min = 2, max = 3, value = 3, step = 0.1),
+                                   shiny::sliderInput(
+                                              inputId = ns("nrd"), 
+                                              label = "Número de rds simulados no intervalo:", 
+                                              min = 50,
+                                              max = 1000,
+                                              value = 500,
+                                              step = 10
+                                          ),
+                                   ),
+                        shiny::mainPanel(
+                                   shiny::plotOutput(ns("plot"))
+                               )
+                    )
+         )
+}
+bifMapServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+        output$plot <- shiny::renderPlot({
+            if (is.null(input$n0)) return(NULL)
+            EcoVirtual::bifAttr(
+                            N0   = as.numeric(input$n0),
+                            K = as.numeric(input$K),
+                            tmax = as.numeric(input$tmax),
+                            nrd = as.numeric(input$nrd),
+                            maxrd = as.numeric(input$rdmax),
+                            minrd = as.numeric(input$rdmin)
+                        )
+        })  
+    })
+}
+
+###########################
+## Demographic Stochasticity
+###########################
+demograStochasticUI <- function(id) {
+  ns <- shiny::NS(id) 
+  shiny::tagList(
+             shiny::titlePanel("Estocasticidade Demográfica"),
+             shiny::sidebarLayout(
+                        shiny::sidebarPanel(
+                                   shiny::sliderInput(ns("tmax"), "Tempo máximo:", min = 5, max = 1000, value = 10, step = 2, animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   shiny::sliderInput(ns("npop"), "Populações simuladas:", min = 5, max = 100, value = 20, step = 2, animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   shiny::sliderInput(ns("n0"), "População inicial:", value = 10, min = 1, max = 1000, step = 2),
+                                   shiny::sliderInput(ns("b"), "Taxa de nascimento:", min = 0, max = 3, value = 0.2, step = 0.1),# animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   shiny::sliderInput(ns("d"), "Taxa de mortalidade:", min = 0, max = 1, value = 0.2, step = 0.1),# animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   shiny::sliderInput(ns("immigr"), "Taxa de imigração (ind/tempo):", min = 0, max = 5, value = 0.2, step = 0.1), # animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   shiny::numericInput(ns("nIndMax"), "Tamanho populacional máximo:", min = 100, max = 10000, value = 1000, step = 100)
+                               ),
+                        shiny::mainPanel(
+                                   shiny::plotOutput(ns("plot")),
+                                    shiny::tags$br(),
+                                     shiny::fluidRow(
+                                                shiny::column(width = 12, align = "center",
+                                                              shiny::actionButton(ns("npopDec"), " - simulations", class = "btn-danges btn-sm"),
+                                                              shiny::actionButton(ns("npopInc"), " + simulations", class = "btn-sucess btn-sm")
+                                                              )
+                                            )
+                               )
+                    )
+         )
+}
+demograStochasticServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+       # observe({print(c(input$n0, input$tmax, input$npop, input$b, input$d, input$immigr, input$nmax))})
+       # browser()
+        simRes <- shiny::reactive({
+             EcoVirtual::popDemographic(
+                            N0   = as.numeric(input$n0),
+                            tmax = as.numeric(input$tmax),
+                            npop = as.numeric(input$npop),
+                            b = as.numeric(input$b),
+                            d = as.numeric(input$d),
+                            immigr = as.numeric(input$immigr),
+                            nIndMax = as.numeric(input$nIndMax)
+                            )
+        })
+        shiny::observeEvent(input$npopDec, {
+            shiny::updateSliderInput(session, "npop", value = input$npop - 2)
+        })
+        shiny::observeEvent(input$npopInc, {
+            shiny::updateSliderInput(session, "npop", value = input$npop + 2)
+        })
+        output$plot <- shiny::renderPlot({
+            ##if (is.null(input$n0)) return(NULL)
+            simData <- simRes()
+            EcoVirtual::popDemogrPlot(demoData = simData)
+        })  
+    })
+}
+
+###########################
+## Environment Stochasticity
+###########################
+environmentStochasticUI <- function(id) {
+  ns <- shiny::NS(id) 
+  shiny::tagList(
+             shiny::titlePanel("Estocasticidade Ambiental"),
+             shiny::sidebarLayout(
+                        shiny::sidebarPanel(
+                                   shiny::sliderInput(ns("tmax"), "Tempo máximo:", min = 10, max = 1000, value = 50, step = 10),
+                                   shiny::sliderInput(ns("npop"), "Populações simuladas:", min = 5, max = 100, value = 20, step = 5),
+                                   shiny::sliderInput(ns("n0"), "População inicial:", value = 10, min = 1, max = 1000, step = 10),
+                                   shiny::sliderInput(ns("lamb"), "Taxa de crescimento populacional (Lambda):", min = 0, max = 3, value = 1.1, step = 0.1),
+                                   shiny::sliderInput(ns("sdLamb"), "Variabilidade Ambiental (desvio padrão):", min = 0, max = 2, value = 0.2, step = 0.01, animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                   #shiny::numericInput(ns("nmax"), "Tamanho populacional máximo no gráfico:", min = 1, max = 10000, value = 500, step = 100),
+                                   shiny::checkboxInput(
+                                              inputId = ns("demog"), 
+                                              label = "Associar estocaticidade demográfica", 
+                                              value = TRUE 
+                                          )
+                               ),
+                        shiny::mainPanel(
+                                   shiny::plotOutput(ns("plot")),
+                                   shiny::tags$br(),
+                                     shiny::fluidRow(
+                                                shiny::column(width = 12, align = "center",
+                                                              shiny::actionButton(ns("varDec"), " - variability", class = "btn-danges btn-sm"),
+                                                              shiny::actionButton(ns("varInc"), " + variability", class = "btn-sucess btn-sm")
+                                                              )
+                                            )
+                               )
+                    )
+         )
+}
+environmentStochasticServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+        simRes <- shiny::reactive({
+             EcoVirtual::popStochastic(
+                             N0 =  as.numeric(input$n0),
+                             lamb = as.numeric(input$lamb),
+                             tmax = as.numeric(input$tmax),
+                             sdLamb = as.numeric(input$sdLamb),
+                             npop = as.numeric(input$npop)
+                         )
+        })
+        shiny::observeEvent(input$varDec, {
+            shiny::updateSliderInput(session, "sdLamb", value = input$sdLamb - 0.01)
+        })
+        shiny::observeEvent(input$varInc, {
+            shiny::updateSliderInput(session, "sdLamb", value = input$sdLamb + 0.01)
+        })
+        
+
+        output$plot <- shiny::renderPlot({
+            if (is.null(input$n0)) return(NULL)
+            stocType <- ifelse(input$demog, "both", "environmental")
+            simData <- simRes()
+            EcoVirtual::popStochasticPlot(
+                            randPopData   = simData,
+                            ## tmax = as.numeric(input$tmax),
+                            ## varr = as.numeric(input$varLamb),
+                            ## npop =  as.numeric(input$npop),
+                            ## #maxN = as.numeric(input$nmax),
+                            stochasticType = stocType
+                            )
+        })  
+    })
+}
+########################
+## Strutured Population
+########################
+popStructuredUI <- function(id){
+    ns <- shiny::NS(id)
+    shiny::tagList(
+               shiny::titlePanel("População Estruturada com 3 estágios"),
+               shiny::sidebarLayout(
+                          shiny::sidebarPanel(
+                                     shiny::sliderInput(ns("tmax"), "Intervalo de tempo:", min = 1, max = 100, value = 5, step = 1, animate = shiny::animationOptions(interval = 300, loop = FALSE)),
+                                     shiny::tags$hr(),
+                                     shiny::tags$h3("Condição inicial da população"),
+                                     shiny::numericInput(ns("ns"), label = shiny::tagList("Número de jovens (Ns", shiny::tags$sub("0"),"):"), min = 0, max = 100 , value = 80, step = 1),
+                                     shiny::numericInput(ns("nj"), label = shiny::tagList("Número de juvenis (Nj", shiny::tags$sub("0"),"):"), min = 0, max = 100, value = 20, step = 1),
+                                     shiny::numericInput(ns("na"), label = shiny::tagList("Número de adultos (Na", shiny::tags$sub("0"),"):"), min = 0, max = 100, value = 10, step = 1),
+                                     shiny::tags$hr(),
+                                     shiny::tags$h3("Taxas transição:"),
+                                     shiny::sliderInput(ns("pss"),
+                                                        label = shiny::tagList("Permanência como jovem (p", shiny::tags$sub("1,1"),"):"), min = 0, max = 1, value = 0.02, step = 0.01),
+                                     shiny::sliderInput(ns("psj"),
+                                                        label = shiny::tagList("Transição de joven para juvenil (p", shiny::tags$sub("2,1"),"):"), min = 0, max = 1, value = 0.4, step = 0.01),
+                                     shiny::sliderInput(ns("pjj"),
+                                                        label = shiny::tagList("Permanência como juvenil:(p", shiny::tags$sub("2,2"),"):"), min = 0, max = 1, value = 0.2, step = 0.01),
+                                     shiny::sliderInput(ns("pja"),
+                                                        label = shiny::tagList("Transição de juvenil para adulto:(p", shiny::tags$sub("3,2"),"):"), min = 0, max = 1, value = 0.25, step = 0.01),
+                                     shiny::sliderInput(ns("paa"),
+                                                        label = shiny::tagList("Permanência como adulto (p", shiny::tags$sub("3,3"),"):"), min = 0, max = 1, value = 0.4, step = 0.01),
+                                     shiny::numericInput(ns("fecJ"), "Fecundidade do juvenil:", min = 0, max = 10, value = 0.05, step = 0.1),
+                                     shiny::numericInput(ns("fecA"), "Fecundidade do Adulto:", min = 0, max = 10, value = 1.5, step = 0.1)
+                                 ),
+                          shiny::mainPanel(
+                                     shiny::fluidRow(
+                                                # Coluna 1: Dois gráficos
+                                                shiny::column(width = 6,
+                                                              shiny::plotOutput(ns("plot1"), height = "300px"),
+                                                              shiny::tags$br(),
+                                                              shiny::plotOutput(ns("plot2"), height = "300px")
+                                                              ),
+      
+                                                # Coluna 2: Gráfico único 
+                                                shiny::column(width = 6,
+                                                              shiny::plotOutput(ns("plot3"), height = "615px")
+                                                              )
+                                               ),
+                                     shiny::tags$br(),
+                                     shiny::tags$hr(),
+                                     shiny::fluidRow(
+                                                shiny::column(width = 12, align = "center",
+                                                              style = "display: flex; justify-content: center; align-items: center; gap: 10px;",
+                                                              shiny::actionButton(ns("tDec"), " - tempo", class = "btn-danges btn-sm"),
+                                                              shiny::actionButton(
+                                                                         ns("play_btn"),
+                                                                         label = "",
+                                                                         icon = shiny::icon("play"), 
+                                                                         class = "btn-success btn-lg",
+                                                                         style = "width: 80px; height: 50px;"
+                                                                     ),
+                                                              shiny::actionButton(ns("tInc"), " + tempo", class = "btn-danges btn-sm")
+                                                              )
+                                            )
+                                 )
+                      )
+           )
+}
+popStructuredServer <- function(id){
+    shiny::moduleServer(id, function(input, output, session){
+        anima <- shiny::reactiveVal(FALSE)
+        simRes <- shiny::reactive({
+             EcoVirtual::popStr(
+                            tmax = as.numeric(input$tmax),
+                            p11 = as.numeric(input$pss),
+                            p12 = as.numeric(input$psj),
+                            p22 = as.numeric(input$pjj),
+                            p23 = as.numeric(input$pja),
+                            p33 = as.numeric(input$paa),
+                            fec2 =  as.numeric(input$fecJ),
+                            fec3 =  as.numeric(input$fecA),
+                            n01 =  as.numeric(input$ns),
+                            n02 = as.numeric(input$nj),
+                            n03 =  as.numeric(input$na)
+                 )
+        })
+        shiny::observeEvent(input$tDec, {
+            shiny::updateSliderInput(session, "tmax", value = input$tmax - 1)
+        })
+        shiny::observeEvent(input$tInc, {
+            shiny::updateSliderInput(session, "tmax", value = input$tmax + 1)
+        })
+        shiny::observeEvent(input$play_btn, {
+            if (input$tmax >= 100 && !anima()) {
+                shiny::updateSliderInput(session, "tmax", value = 5)
+                anima(TRUE)
+                shiny::updateActionButton(session, "play_btn", 
+                              label = " Pausar", 
+                              icon = shiny::icon("pause"))
+    
+            }else
+            {
+                anima(!anima())
+             # Muda o rótulo e ícone do botão dinamicamente
+                if (anima()) {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("pause"))
+                } else {
+                    shiny::updateActionButton(session, "play_btn", label = "", icon = shiny::icon("play"))
+                }
+            }
+        })
+        shiny::observe({
+            if (anima()) {
+                shiny::invalidateLater(400, session)
+                        timesPlus <- shiny::isolate(input$tmax + 1)
+        
+                if (timesPlus <= 100) {
+                    shiny::updateSliderInput(session, "tmax", value = timesPlus)
+                } else {
+                    # Para a animação ao chegar no fim
+                    anima(FALSE)
+                    shiny::updateActionButton(session, "play_btn", label = " Reiniciar", icon = shiny::icon("sync"))
+                    #shiny::updateSliderInput(session, "tmax", value = 5)
+                }
+            }
+        })
+        output$plot1 <- shiny::renderPlot({
+            EcoVirtual:::lambdaPlot(lambda = simRes()$lambda, times = as.numeric(input$tmax))
+            
+        })
+        output$plot2 <- shiny::renderPlot({
+            EcoVirtual:::popStagesPlot(popMat = simRes()$matPopStr, times = as.numeric(input$tmax))
+            
+        })
+        output$plot3 <- shiny::renderPlot({
+            EcoVirtual:::popStagesPlot(popMat = simRes()$matPopRel, times = as.numeric(input$tmax))
+            
+        })  
+    })
+}
+

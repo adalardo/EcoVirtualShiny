@@ -1,0 +1,31 @@
+/* inst/app/www/custom.css */
+
+/* Cor de fundo da barra de navegação (Azul USP) */
+.navbar-default {
+    background-color: #004684 !important;
+    border-color: #003366;
+}
+
+/* Cor do texto e links na barra */
+.navbar-default .navbar-nav > li > a, 
+.navbar-default .navbar-brand {
+    color: #ffffff !important;
+    font-weight: bold;
+}
+
+/* Cor ao passar o mouse (Hover) - Amarelo USP */
+.navbar-default .navbar-nav > li > a:hover {
+    color: #ffcc00 !important;
+}
+
+/* Destaque para a aba ativa */
+.navbar-default .navbar-nav > .active > a {
+    background-color: #003366 !important;
+    color: #ffcc00 !important;
+}
+
+/* Ajuste fino para o logo no título */
+.navbar-brand img {
+    display: inline-block;
+    vertical-align: middle;
+}

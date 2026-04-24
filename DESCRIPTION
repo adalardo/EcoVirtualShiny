@@ -1,0 +1,16 @@
+Package: EcoVirtualShiny
+Title: Interface Interativa para o Pacote EcoVirtual
+Version: 0.0.1
+Authors@R: person(given = c("Alexandre", " Adalardo"),
+	   family = "de Oliveira ",
+	   email = "seu@email.com",
+	   role = c("aut", "cre"))
+Description: A Shiny interface for simulating ecological models with EcoVirtual package. 
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    shiny (>= 1.7.0),
+    bslib (>= 0.4.0),
+    EcoVirtual (>= 1.1.0)
+RoxygenNote: 7.3.3

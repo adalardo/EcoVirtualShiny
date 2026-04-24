@@ -1,0 +1,62 @@
+ecoVirtualUI <- function() {
+  shiny::tagList(
+    shiny::tags$head(
+      # Certifique-se de que o arquivo no inst/www se chama 'usp.css'
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/usp.css")
+    ),
+    shiny::navbarPage(
+      title = shiny::tagList(
+        shiny::tags$img(
+          src = "www/ecoVirtualLogo.gif", 
+          height = "50px", 
+          style = "margin-right: 15px; vertical-align: middle;"
+        ),
+        "EcoVirtual"
+      ),
+      # bslib é excelente para manter o visual limpo sem esforço
+      theme = bslib::bs_theme(bootswatch = "flatly"),
+      
+      shiny::navbarMenu("Introdução",
+        shiny::tabPanel("Apresentação", 
+          shiny::tags$h2("Bem-vindo ao EcoVirtual Interativo"),
+          shiny::tags$p("O projeto EcoVirtual nasceu da percepção de que modelos matemáticos e ecológicos complexos podem ser entendidos de forma mais intuitiva através de simulações computacionais..."),
+          shiny::tags$h2("Autores:"),
+          shiny::tags$p("Alexandre Adalardo de Oliveira"),
+          shiny::tags$p("Paulo Inácio Prado"),
+          shiny::tags$p("Departamento de Ecologia - IBUSP")
+        ),
+        shiny::tabPanel("Roteiros",
+          shiny::tags$h2("EcoVirtual Portal"),
+          shiny::tags$p(
+            "As simulações dessa plataforma são acompanhadas de roteiros que estão no",
+            shiny::tags$b(" Portal EcoVirtual"),
+            " que pode ser acessado no endereço ",
+            shiny::tags$a(
+              href = "http://ecovirtual.ib.usp.br", 
+              "http://ecovirtual.ib.usp.br", 
+              target = "_blank"
+            ),
+            "."
+          ),
+          shiny::tags$p("Abaixo listamos os roteiros com seus respectivos links.")
+        )
+      ),
+      
+      shiny::navbarMenu("Uma população",
+                        shiny::tabPanel("Crescimento Exponencial", popExpUI("popExp_1")),
+                        shiny::tabPanel("Crescimento Logistico", popLogisticUI("popLog_1")),
+                        shiny::tabPanel("Diagrama de Bifurcação Logístico", bifMapUI("bifMap_1")),
+                        shiny::tabPanel("Estocasticidade Demográfica", demograStochasticUI("demoStoc_1")),
+                        shiny::tabPanel("Estocasticidade Ambiental", environmentStochasticUI("envStoc_1")),
+                        shiny::tabPanel("População Estruturada", popStructuredUI("popStr_1"))
+        #shiny::tabPanel("Metapopulações", mod_meta_ui("meta_1"))
+      ),
+      
+      # Placeholders para os próximos menus
+      shiny::navbarMenu("Metapopulação"),
+      shiny::navbarMenu("Duas populações"),
+      shiny::navbarMenu("Comunidade"),
+      shiny::navbarMenu("Biogeografia")
+    )
+  )
+}
