@@ -11,7 +11,9 @@ runEcoVirtual <- function() {
     )
   }
     shiny::shinyApp(
-    ui = ecoVirtualUI(), 
-    server = ecoVirtualServer
+    ui = EcoVirtualShiny::ecoVirtualUI(), 
+    server = function(input, output, session) {
+      EcoVirtualShiny::ecoVirtualServer("global")
+    }
   )
 }
